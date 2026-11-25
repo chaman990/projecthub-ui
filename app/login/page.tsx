@@ -1,8 +1,12 @@
-"use client"
+"use client";
 import { loginSchema, LoginFormValues } from "@/lib/validations/auth";
+import { useAppDispatch } from "@/store/hooks";
+import { loginUser } from "@/store/slices/authSlice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lock, Rocket, User } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 export default function LoginPage() {
@@ -17,11 +21,22 @@ export default function LoginPage() {
       password: "",
     },
   });
+
+  const [serverError, setServerError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+
   const onSubmit = async (data: LoginFormValues) => {
     console.log("Data validated ", data);
-    // then we will call the api for now lets assume use is authenticated and then we will move the use to home page
+    setServerError(null);
+    try {
+      await dispatch(loginUser(data)).unwrap();
+      router.push("/");
+    } catch (err: unknown) {
+      setServerError(typeof err === "string" ? err : "Login failed");
+    }
   };
-  
+
   return (
     <>
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
@@ -102,6 +117,12 @@ export default function LoginPage() {
                 </p>
               </div>
 
+               {serverError && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-600">
+                  {serverError}
+                </div>
+              )}
+
               {/* Form */}
               <form
                 onSubmit={handleSubmit(onSubmit)}
@@ -133,41 +154,40 @@ export default function LoginPage() {
                 </div>
 
                 {/* Password Input */}
-                              <div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-slate-400" />
+                <div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      {...register("password")}
+                      className={`w-full pl-11 pr-4 py-3 text-sm text-slate-800 bg-white border rounded-lg focus:outline-none focus:ring-2 transition placeholder:text-slate-400 ${
+                        errors.password
+                          ? "border-red-500 focus:ring-red-500"
+                          : "border-slate-200 focus:ring-indigo-500 focus:border-transparent"
+                      }`}
+                    />
                   </div>
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    {...register("password")}
-                    className={`w-full pl-11 pr-4 py-3 text-sm text-slate-800 bg-white border rounded-lg focus:outline-none focus:ring-2 transition placeholder:text-slate-400 ${
-                      errors.password
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-slate-200 focus:ring-indigo-500 focus:border-transparent"
-                    }`}
-                  />
-                </div>
 
-                {/* Error message (left) & Forgot Password link (right) */}
-                <div className="mt-1.5 flex items-center justify-between gap-2">
-                  {errors.password ? (
-                    <p className="text-xs text-red-600 font-medium">
-                      {errors.password.message}
-                    </p>
-                  ) : (
-                    <span />
-                  )}
-                  <Link
-                    href="/forgot-password"
-                    className="text-xs font-medium text-[#4338CA] hover:text-[#3730A3] hover:underline shrink-0"
-                  >
-                    Forgot password?
-                  </Link>
+                  {/* Error message (left) & Forgot Password link (right) */}
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    {errors.password ? (
+                      <p className="text-xs text-red-600 font-medium">
+                        {errors.password.message}
+                      </p>
+                    ) : (
+                      <span />
+                    )}
+                    <Link
+                      href="/forgot-password"
+                      className="text-xs font-medium text-[#4338CA] hover:text-[#3730A3] hover:underline shrink-0"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                 </div>
-              </div>
-
 
                 {/* Primary Submit Button */}
                 <button

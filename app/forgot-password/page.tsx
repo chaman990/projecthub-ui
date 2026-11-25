@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Mail, ArrowLeft, CheckCircle2, Rocket } from "lucide-react";
+import { api, MessageResponse } from "@/lib/api";
+
 import {
   forgetPasswordSchema,
   type ForgetPasswordValues,
@@ -12,6 +14,8 @@ import {
 
 export default function ForgotPasswordPage() {
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
+  const [devToken, setDevToken] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
@@ -25,16 +29,23 @@ export default function ForgotPasswordPage() {
   });
 
   const onSubmit = async (data: ForgetPasswordValues) => {
-    // Replace with your FastAPI password reset email endpoint
-    console.log("Reset requested for:", data.email);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setSubmittedEmail(data.email);
+    setServerError(null);
+    try {
+      const res = await api.post<MessageResponse>("/auth/forgot-password", {
+        email: data.email,
+      });
+      setSubmittedEmail(data.email);
+      setDevToken(res.data.dev_token ?? null);
+    } catch (err: unknown) {
+      setServerError(
+        err instanceof Error ? err.message : "Failed to send reset link",
+      );
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12">
-        
         {/* Left Branding Panel */}
         <div className="md:col-span-5 bg-gradient-to-b from-[#172578] via-[#0e1754] to-[#080d36] text-white p-8 flex flex-col justify-between relative overflow-hidden">
           <div className="absolute bottom-0 left-6 w-16 h-40 bg-white/5 rounded-t-md pointer-events-none" />
@@ -60,14 +71,39 @@ export default function ForgotPasswordPage() {
               fill="none"
               xmlns="http://w3.org"
             >
-              <rect x="20" y="95" width="240" height="8" rx="4" fill="#312E81" />
+              <rect
+                x="20"
+                y="95"
+                width="240"
+                height="8"
+                rx="4"
+                fill="#312E81"
+              />
               <circle cx="75" cy="48" r="12" fill="#FDBA74" />
-              <path d="M55 95C55 78 63 66 75 66C87 66 95 78 95 95H55Z" fill="#FACC15" />
+              <path
+                d="M55 95C55 78 63 66 75 66C87 66 95 78 95 95H55Z"
+                fill="#FACC15"
+              />
               <circle cx="140" cy="42" r="12" fill="#FDBA74" />
-              <path d="M118 95C118 75 127 62 140 62C153 62 162 75 162 95H118Z" fill="#38BDF8" />
+              <path
+                d="M118 95C118 75 127 62 140 62C153 62 162 75 162 95H118Z"
+                fill="#38BDF8"
+              />
               <circle cx="205" cy="48" r="12" fill="#FDBA74" />
-              <path d="M185 95C185 78 193 66 205 66C217 66 225 78 225 95H185Z" fill="#818CF8" />
-              <rect x="115" y="72" width="50" height="23" rx="3" fill="#1E1B4B" stroke="#6366F1" strokeWidth="2" />
+              <path
+                d="M185 95C185 78 193 66 205 66C217 66 225 78 225 95H185Z"
+                fill="#818CF8"
+              />
+              <rect
+                x="115"
+                y="72"
+                width="50"
+                height="23"
+                rx="3"
+                fill="#1E1B4B"
+                stroke="#6366F1"
+                strokeWidth="2"
+              />
               <circle cx="140" cy="83" r="3" fill="#818CF8" />
             </svg>
           </div>
@@ -92,6 +128,18 @@ export default function ForgotPasswordPage() {
                   </span>
                   .
                 </p>
+
+                {devToken && (
+                  <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-xs">
+                    <Link
+                      href={`/reset-password?token=${devToken}`}
+                      className="font-semibold text-[#4338CA] hover:underline"
+                    >
+                      Open Reset Password Page (Dev Link) →
+                    </Link>
+                  </div>
+                )}
+
                 <div className="pt-4">
                   <Link
                     href="/login"
@@ -113,7 +161,11 @@ export default function ForgotPasswordPage() {
                     Enter your email and we&apos;ll send you a reset link
                   </p>
                 </div>
-
+                {serverError && (
+                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-600">
+                    {serverError}
+                  </div>
+                )}
                 <form
                   onSubmit={handleSubmit(onSubmit)}
                   noValidate
@@ -164,7 +216,6 @@ export default function ForgotPasswordPage() {
             )}
           </div>
         </div>
-
       </div>
     </div>
   );
